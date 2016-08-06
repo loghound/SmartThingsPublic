@@ -12,7 +12,7 @@
  *
  *	Arduino Security System
  *
- *	Author: cschwer
+ *	Author: loghound (john)
  *	Date: 2015-10-27
  */
  preferences {
