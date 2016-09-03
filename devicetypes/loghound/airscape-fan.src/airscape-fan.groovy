@@ -12,7 +12,7 @@
  *
  *	Arduino Security System
  *
- *	Author: loghound (john)
+ *	Author: cschwer
  *	Date: 2015-10-27
  */
  preferences {
@@ -31,6 +31,8 @@
         	capability 	"Motion Sensor"
             capability "Temperature Measurement"
             capability "Temperature Measurement"
+            capability "Switch"
+            capability "Switch Level"
          //   capability "Switch"
 	}
 
@@ -96,12 +98,45 @@ valueTile( "power", "device.power") {
 
 
 def on() {
+	log.debug "Switch On"
 	def result=setDir(1)
     return result
 }
 def off() {
+	log.debug "Switch Off"
     def result=setDir(4)
     return result
+}
+
+def level(level,rate) {
+log.debug "level is ${level}"
+}
+
+def setLevel(level,rate) {
+
+Integer speed=level/100.0*7
+
+def result
+
+log.debug "setLevel is ${level} and speed should be ${speed}"
+
+if (speed==0) {
+ result=setDir(4)
+    log.debug "Set fan to off ${result}"
+} else
+
+if (speed>4) {
+ result=setDir(1)
+    log.debug "Set fan to one faster speed ${result}"
+
+} else 
+
+if (speed <=4 ) {
+    result=setDir(3)
+    log.debug "Set fan down a speed ${result}"
+}
+  log.debug result
+    result
 }
 
 def setDir(dir) {
@@ -116,10 +151,10 @@ def setDir(dir) {
     else
     	path="/fanspd.cgi?dir=${dir}"
         
-    log.debug "Using ip: ${ip} and port: ${port} for device: ${device.id}"
+    log.debug "Using ip: ${ip} and port: ${port} for device: ${device.id} and path ${path}"
     def result=new physicalgraph.device.HubAction(
     	method: "GET",
-    	path: "/fanspd.cgi",
+    	path: path,
     	headers: [
         	HOST: "10.0.0.236:80"
     	]
@@ -148,6 +183,7 @@ def initialize() {
 def parse(String description) {
 	def result = []
     def txt=parseLanMessage(description).body
+    log.debug txt
     def oa_temp=   txt =~ ~/oa_temp>(.+?)</
 	def house_temp=   txt =~ ~/house_temp>(.+?)</
 	def attic_temp=   txt =~ ~/attic_temp>(.+?)</
