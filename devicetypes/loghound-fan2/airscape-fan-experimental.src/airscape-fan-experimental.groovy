@@ -348,10 +348,10 @@ def parse(String description) {
     def energyTable=state.energyTable
     def speedTable=state.speedTable
     
-    	if (state.powerTableYesterday == null || state.energyTableYesterday == null || powerTable == null || energyTable == null || state.speedTableYesterday || speedTable) {
+    	if (state.powerTableYesterday == null || state.energyTableYesterday == null || powerTable == null || energyTable == null || state.speedTableYesterday==null || speedTable==null) {
 		def startOfToday = timeToday("00:00", location.timeZone)
 		def newValues
-		if (state.powerTableYesterday == null || state.energyTableYesterday == null || state.speedTableYesterday) {
+		if (state.powerTableYesterday == null || state.energyTableYesterday == null || state.speedTableYesterday==null) {
 			log.trace "Querying DB for yesterday's data…"
 			def dataTable = []
 			def powerData = device.statesBetween("temperature", startOfToday - 1, startOfToday, [max: 288]) // 24h in 5min intervals should be more than sufficient…
