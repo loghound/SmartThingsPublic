@@ -340,13 +340,27 @@ def parse(String description) {
         //result << createEvent(name: "motion", value: allMotionStatus)
     }
 
-    log.debug result
+   //  log.debug result
     
     /* data managemenet */
+    
+    log.debug "Doing data management "
     
     def powerTable = state.powerTable
     def energyTable=state.energyTable
     def speedTable=state.speedTable
+    
+    if (!state.today || state.today != todayDay) {
+		state.peakpower = currentPower
+		state.today = todayDay
+		state.powerTableYesterday = powerTable
+		state.energyTableYesterday = energyTable
+		powerTable = powerTable ? [] : null
+		energyTable = energyTable ? [] : null
+		state.lastPower = 0
+
+	}
+    
     
     	if (state.powerTableYesterday == null || state.energyTableYesterday == null || powerTable == null || energyTable == null || state.speedTableYesterday==null || speedTable==null) {
 		def startOfToday = timeToday("00:00", location.timeZone)
@@ -395,6 +409,8 @@ def parse(String description) {
             /* End of speed data */
             
 		}
+        
+        log.debug "handling todays data"
 		if (powerTable == null || energyTable == null || speedTable==null) {
 			log.trace "Querying DB for today's data…"
 			powerTable = []
@@ -403,6 +419,7 @@ def parse(String description) {
 				while ((newValues = device.statesBetween("temperature", startOfToday, powerData.last().date, [max: 288])).size()) {
 					powerData += newValues
 				}
+                log.trace powerData
 				powerData.reverse().each() {
 					powerTable.add([it.date.format("H", location.timeZone),it.date.format("m", location.timeZone),it.integerValue])
 				}
@@ -431,12 +448,14 @@ def parse(String description) {
 		}
 	}
 	// add latest power & energy readings for the graph
-	if (currentPower > 0 || powerTable.size() != 0) {
+    log.debug "About to add todays data"
+	if (currentPower > 0 || powerTable.size() != 0 || energyTable.size() !=0 ) {
 		def newDate = new Date()
 		powerTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),state.temperature])
 		energyTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),state.temperatureoa])
         speedTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),state.actualFanSpeed])
 	}
+    
 	state.powerTable = powerTable
 	state.energyTable = energyTable
     state.speedTable=speedTable
