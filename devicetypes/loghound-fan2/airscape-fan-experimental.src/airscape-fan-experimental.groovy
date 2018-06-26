@@ -131,6 +131,7 @@ def configure() {
 def on() {
     log.debug "Switch On"
     state.desiredFanSpeed=1
+    result << createEvent(name: "switch", value: "off", displayed: true)
     def result = levelHandler()
 
   //  return result
@@ -139,6 +140,7 @@ def on() {
 def off() {
     log.debug "Switch Off"
     state.desiredFanSpeed=0
+    result << createEvent(name: "switch", value: "off", displayed: true)
     def result = levelHandler()
 
    // return result
@@ -294,19 +296,19 @@ def parse(String description) {
     }
 
     // Emulate a binary switch
-    if (fanspd) {
-        def spdInt = fanspd[0][1].toInteger()
-        if (spdInt == 0) {
+
+        if (state.level == 0) {
             result << createEvent(name: "switch", value: "off", displayed: true)
             result << createEvent(name: "level", value: 0, displayed: true)
-
+		 log.debug "switch set to off"
+		
         } else {
             result << createEvent(name: "switch", value: "on", displayed: true)
             result << createEvent(name: "level", value: spdInt, displayed: true)
+            		 log.debug "switch set to on"
         }
-        state.currentFanSpeed = spdInt
+        state.currentFanSpeed = state.level
 
-    }
 
     // result << createEvent(name: "temperature", value: new Random().nextInt(100) + 1, displayed: true )
 
