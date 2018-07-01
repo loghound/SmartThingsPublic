@@ -94,10 +94,10 @@ metadata {
             state "level", action: "switch level.setLevel"
         }
 
-        valueTile("power", "device.power") {
-            // label will be the current value of the power attribute
-            state "power", label: '${currentValue} W'
+		valueTile("power", "device.power", decoration: "flat", width: 1, height: 1) {
+            state "power", label:'${currentValue} Watts'
         }
+
 
 
         standardTile("refresh", "device.backdoor", inactiveLabel: false, decoration: "flat") {
@@ -252,12 +252,14 @@ def initialize() {
 def parse(String description) {
     def result = []
     def txt = parseLanMessage(description).body
-    log.debug txt
+
     def oa_temp = txt =~ ~/oa_temp>(.+?)</
     def house_temp = txt =~ ~/house_temp>(.+?)</
     def attic_temp = txt =~ ~/attic_temp>(.+?)</
     def power = txt =~ ~/power>(.+?)</
     def fanspd = txt =~ ~/fanspd>(.+?)</
+
+    log.debug "Body text is:\n$txt"
 
     state.level = fanspd[0][1].toInteger()
 
@@ -268,36 +270,33 @@ def parse(String description) {
     if (house_temp) {
         state.temperature = house_temp[0][1]
         result << createEvent(name: "temperature", value: state.temperature, displayed: true)
-        log.debug "Setting temperature to $house_temp[0][1]"
+        log.debug "Setting inside temperature to $state.temperature"
     }
 
     if (oa_temp) {
         state.temperatureoa = oa_temp[0][1]
         result << createEvent(name: "temperatureoa", value: state.temperatureoa, displayed: true)
-        log.debug "Setting temperature to $oa_temp[0][1]"
+        log.debug "Setting OA temperature to $state.temperatureoa"
     }
 
     if (attic_temp) {
         state.temperatureattic = attic_temp[0][1]
         result << createEvent(name: "temperatureattic", value: state.temperatureattic, displayed: true)
-        log.debug "Setting temperature to $attic_temp[0][1]"
+        log.debug "Setting attic temperature to $state.temperatureattic"
     }
 
     if (power) {
         def powerDisplay = power[0][1].toInteger()
-        if (powerDisplay == 0) {
-            log.debug "Door Status is ${doorStatus}"
-            def doorInProgress = doorStatus[0][1].toInteger()
-            if (doorInProcess > 0)
-                powerDisplay = 10 // Reasonable guess for now -- just toss up 10W
-        }
+        result << createEvent(name: "power", value: powerDisplay, displayed: true)
+        log.debug "Setting power to $powerDisplay"
+
         state.power = powerDisplay
-        result << createEvent(name: "power", value: powerDisplay.toString(), displayed: true)
+
     }
 
     // Emulate a binary switch
 
-        if (state.level == 0) {
+    if (state.level == 0) {
             result << createEvent(name: "switch", value: "off", displayed: true)
             result << createEvent(name: "level", value: 0, displayed: true)
 		 log.debug "switch set to off"
@@ -305,45 +304,10 @@ def parse(String description) {
         } else {
             result << createEvent(name: "switch", value: "on", displayed: true)
             result << createEvent(name: "level", value: spdInt, displayed: true)
-            		 log.debug "switch set to on"
+            log.debug "***switch set to on with level $state.level"
         }
         state.currentFanSpeed = state.level
 
-
-    // result << createEvent(name: "temperature", value: new Random().nextInt(100) + 1, displayed: true )
-
-    log.debug "Parsing '${description}'"
-    def msg = parseLanMessage(description)
-    def headerString = msg.header
-
-    if (!headerString) {
-        log.debug "headerstring was null for some reason :("
-    }
-
-
-    def bodyString = msg.body
-    def value = "";
-    if (bodyString) {
-        log.debug bodyString
-        // default the contact and motion status to closed and inactive by default
-        def allContactStatus = "closed"
-        def allMotionStatus = "inactive"
-        def json = msg.json;
-        json?.house?.door?.each { door ->
-            value = door?.status == 1 ? "open" : "closed"
-            log.debug "${door.name} door status ${value}"
-            // if any door is open, set contact to open
-            if (value == "open") {
-                allContactStatus = "open"
-            }
-            result << creatEvent(name: "temperature", value: allContactStatus)
-        }
-
-        //result << createEvent(name: "motion", value: allMotionStatus)
-    }
-
-   //  log.debug result
-    
     /* data managemenet */
     
     log.debug "Doing data management "
@@ -461,10 +425,8 @@ def parse(String description) {
 	state.powerTable = powerTable
 	state.energyTable = energyTable
     state.speedTable=speedTable
-    
 
-    
-    result
+    return result
 }
 
 
